@@ -32,9 +32,6 @@
 #include "threads/interrupt.h"
 #include "threads/thread.h"
 
-struct semaphore_elem
-int priority;
-
 /* Initializes semaphore SEMA to VALUE.  A semaphore is a
    nonnegative integer along with two atomic operators for
    manipulating it:
