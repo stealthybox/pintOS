@@ -92,7 +92,6 @@ struct thread
     int base_priority;                  /* Priority before donation */
     struct list donations;              /* List of all priorities donated to this thread */
     struct lock *waiting_lock;          /* Lock thread is waiting to aquire */
-    struct list donations;
     struct list_elem allelem;           /* List element for all threads list. */
 
     /* Shared between thread.c and synch.c. */
