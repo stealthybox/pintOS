@@ -147,20 +147,15 @@ thread_tick (void)
   if(thread_mlfqs) {
     
     if(strcmp("idle", thread_current()->name) != 0) {
-      
        t->recent_cpu = add_fi(thread_current()->recent_cpu, 1);
     }
 
     if(timer_ticks() % 100 == 0) {
-
       mod_100_equals_zero();
-
     }
 
     if(timer_ticks() % 4 == 0) {
-      
       mod_4_equals_zero();
-
     }
   }
   
