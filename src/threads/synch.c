@@ -68,6 +68,21 @@ sema_down (struct semaphore *sema)
   old_level = intr_disable ();
   while (sema->value == 0) 
     {
+      struct lock *lock = thread_current()->waiting_lock;
+      int level = 0;
+
+      //donate priority
+      for (level = 0; lock && level < 8; level++)
+      {
+	if (!lock->holder || thread_current()->priority <= lock->holder->priority)
+	  break;
+	else
+	  {
+	    lock->holder->priority = thread_current()->priority;
+	    lock = lock->holder->waiting_lock;
+	  }
+      }
+	
       list_insert_ordered (&sema->waiters, &thread_current ()->elem,
                            (list_less_func *) &compare_priority, NULL);
       thread_block ();
@@ -118,6 +133,9 @@ sema_up (struct semaphore *sema)
     thread_unblock (list_entry (list_pop_front (&sema->waiters),
                                 struct thread, elem));
   sema->value++;
+  if (!intr_context())
+    check_priority_yield();
+
   intr_set_level (old_level);
 }
 
@@ -197,8 +215,20 @@ lock_acquire (struct lock *lock)
   ASSERT (!intr_context ());
   ASSERT (!lock_held_by_current_thread (lock));
 
+  enum intr_level old_level = intr_disable();
+  if (lock->holder && !thread_mlfqs)
+    {
+	thread_current()->waiting_lock = lock;
+	list_insert_ordered(&lock->holder->donars, &thread_current()->donatelem,
+			  (list_less_func *) &compare_priority, NULL);
+    }
+
   sema_down (&lock->semaphore);
+
+  thread_current()->waiting_lock = NULL;
   lock->holder = thread_current ();
+
+  intr_set_level(old_level);
 }
 
 /* Tries to acquires LOCK and returns true if successful or false
@@ -217,7 +247,10 @@ lock_try_acquire (struct lock *lock)
 
   success = sema_try_down (&lock->semaphore);
   if (success)
-    lock->holder = thread_current ();
+    {
+      lock->holder = thread_current ();
+      thread_current()->waiting_lock = NULL;
+    }
   return success;
 }
 
@@ -233,7 +266,35 @@ lock_release (struct lock *lock)
   ASSERT (lock_held_by_current_thread (lock));
 
   lock->holder = NULL;
+
+  enum intr_level old_level = intr_disable();
+
+  if (thread_mlfqs) {
+    sema_up (&lock->semaphore);
+    intr_set_level (old_level);
+    return;
+  }
+
+  //remove lock's donar from donars list
+  struct list_elem *donar = list_begin(&thread_current()->donars);
+  while (donar != list_end(&thread_current()->donars))
+    {
+      if (list_entry(donar, struct thread, donatelem)->waiting_lock == lock)
+	list_remove(donar);
+      donar = list_next(donar);
+    }
+
+  //reset current threads priority
+  thread_current()->priority = thread_current()->base_priority;
+  if (!list_empty(&thread_current()->donars) && thread_current()->priority <
+      list_entry(list_front(&thread_current()->donars), struct thread, donatelem)->priority)
+    {
+      thread_current()->priority =
+	list_entry(list_front(&thread_current()->donars), struct thread, donatelem)->priority;
+    }
+
   sema_up (&lock->semaphore);
+  intr_set_level (old_level);
 }
 
 /* Returns true if the current thread holds LOCK, false

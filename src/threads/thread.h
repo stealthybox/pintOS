@@ -90,7 +90,7 @@ struct thread
     int64_t wakeup_time;                /* Time to wake up after. */
     int priority;                       /* Priority. */
     int base_priority;                  /* Priority before donation */
-    struct list donations;              /* List of all priorities donated to this thread */
+    struct list donars;              	/* List of all priorities donated to this thread */
     struct lock *waiting_lock;          /* Lock thread is waiting to aquire */
 
     struct list_elem allelem;           /* List element for all threads list. */
@@ -152,7 +152,6 @@ int thread_get_load_avg (void);
 
 int load_average;
 
-bool compare_priority (const struct list_elem *e1,
-                       const struct list_elem *e2, void *aux UNUSED);
+bool compare_priority (struct list_elem *e1, struct list_elem *e2, void *aux UNUSED);
 
 #endif /* threads/thread.h */
