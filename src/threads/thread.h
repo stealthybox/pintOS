@@ -92,10 +92,7 @@ struct thread
     int base_priority;                  /* Priority before donation */
     struct list donations;              /* List of all priorities donated to this thread */
     struct lock *waiting_lock;          /* Lock thread is waiting to aquire */
-<<<<<<< HEAD
 
-=======
->>>>>>> 1ff4739034cc828d0307458b101417b4c2abcd3a
     struct list_elem allelem;           /* List element for all threads list. */
 
     /* Shared between thread.c and synch.c. */
@@ -153,11 +150,7 @@ void thread_set_nice (int);
 int thread_get_recent_cpu (void);
 int thread_get_load_avg (void);
 
-/************************************************************************************************/
-bool cmp_waketick(struct list_elem *first, struct list_elem *second, void *aux);
-
 int load_average;
-/************************************************************************************************/
 
 bool compare_priority (const struct list_elem *e1,
                        const struct list_elem *e2, void *aux UNUSED);
