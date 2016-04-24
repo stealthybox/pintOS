@@ -153,7 +153,6 @@ int thread_get_load_avg (void);
 /************************************************************************************************/
 bool cmp_waketick(struct list_elem *first, struct list_elem *second, void *aux);
 
-int load_average;
 /************************************************************************************************/
 
 bool compare_priority (const struct list_elem *e1,

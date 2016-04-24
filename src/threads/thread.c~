@@ -146,23 +146,54 @@ thread_tick (void)
 
   if(thread_mlfqs) {
     
-    if(strcmp("idle", thread_current()->name) != 0) {
-      
-       t->recent_cpu = add_fi(thread_current()->recent_cpu, 1);
-    }
+	    if(strcmp("idle", thread_current()->name) != 0) {
+	      
+	       t->recent_cpu = add_fi(thread_current()->recent_cpu, 1);
+	    }
 
-    if(timer_ticks() % 100 == 0) {
+	    if(timer_ticks() % 100 == 0) {
 
-      mod_100_equals_zero();
+	      struct list_elem *elm;
 
-    }
+	      int tmp = 0; 
+	      int i = 0;
 
-    if(timer_ticks() % 4 == 0) {
-      
-      mod_4_equals_zero();
+	      load_average = add_fp(div_fi(mul_fi(load_average, 59), 60), 
+				 	div_fi(int_to_fp(      
+						(strcmp("idle", running_thread()->name) == 0 ? 0:1) 
+							+ list_size(&ready_list)), 60));
 
-    }
-  }
+	      tmp = div_fp(mul_fi(load_average, 2), add_fi(mul_fi(load_average, 2), 1));
+
+
+
+	      for (elm = list_begin (&all_list); elm != list_end (&all_list); elm = list_next (elm)) {
+		
+		struct thread *thrd = list_entry(elm, struct thread, allelem);
+
+		thrd->recent_cpu = add_fi(mul_fp(tmp, thrd->recent_cpu), thrd->nice);
+
+	      }
+
+	    }
+
+
+	    if(timer_ticks() % 4 == 0) {
+	      
+	      struct list_elem *elmt;
+
+
+	      for (elmt = list_begin(&all_list); elmt != list_end(&all_list); elmt = list_next(elmt)) {
+		
+		struct thread *thr = list_entry(elmt, struct thread, allelem);
+
+		thr->priority = PRI_MAX - int_rd(div_fi(thr->recent_cpu, 4)) - (thr->nice * 2);
+
+	      }/*end for*/
+
+	    }/*end nested if */
+
+  }/*end if */
   
   /* Enforce preemption. */
   if (++thread_ticks >= TIME_SLICE)
@@ -675,43 +706,6 @@ compare_priority (const struct list_elem *e1, const struct list_elem *e2, void *
   }
   return false;
 }
-
-/***************************************/
-
-void
-mod_100_equals_zero(void) {
-
-  struct list_elem *elm;
-
-  int tmp = 0; 
-  int i = 0;
-
-  load_average = add_fp(div_fi(mul_fi(load_average, 59), 60), div_fi(int_to_fp(      
-				(strcmp("idle", running_thread()->name) == 0 ? 0:1) 
-					+ list_size(&ready_list)), 60));
-
-  tmp = div_fp(mul_fi(load_average, 2), add_fi(mul_fi(load_average, 2), 1));
-
-  for (elm = list_begin (&all_list); elm != list_end (&all_list); elm = list_next (elm)) {
-    struct thread *thrd = list_entry(elm, struct thread, allelem);
-    thrd->recent_cpu = add_fi(mul_fp(tmp, thrd->recent_cpu), thrd->nice);
-  }
-}
-
-
-void
-mod_4_equals_zero(void) {
-
-  struct list_elem *elmt;
-
-  for(elmt = list_begin(&all_list); elmt != list_end(&all_list); elmt = list_next(elmt)) {
-    struct thread *thr = list_entry(elmt, struct thread, allelem);
-    thr->priority = PRI_MAX - int_rd(div_fi(thr->recent_cpu, 4)) - (thr->nice * 2);
-  }/*end for*/
-
-}
-
-/***********************************************************/
 
 /* Returns a tid to use for a new thread. */
 static tid_t
